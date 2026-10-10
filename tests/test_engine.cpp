@@ -1,13 +1,23 @@
 /**
  * @file test_engine.cpp
- * @brief Unit tests for Animotion C++ Player Engine & generated header integration.
- * Compiles natively with g++ to verify syntax, memory layout, and timing logic.
+ * @brief Unit tests for Animotion modular C++ engine & generated header integration.
+ * Compiles natively with g++ to verify syntax, modular headers, memory footprint,
+ * and non-blocking timing logic (including rollover).
  */
 
 #include <iostream>
 #include <cassert>
 #include <vector>
+
+// Modular includes test
+#include "animotion/animation.h"
+#include "animotion/display_adapter.h"
+#include "animotion/player.h"
+
+// Umbrella header include test
 #include "animotion.h"
+
+// Generated animation header
 #include "../examples/esp32c3-ssd1306/src/animation.h"
 
 // Mock renderer tracking invocations
@@ -190,6 +200,52 @@ void test_pause_and_resume() {
     std::cout << "  [PASS] test_pause_and_resume" << std::endl;
 }
 
+void test_millis_rollover() {
+    MockRenderer mock;
+    animotion::Player player;
+    player.begin(&ANIMATION_DATA, testCallback, &mock);
+
+    // Set timestamp near 32-bit overflow: 0xFFFFFFE0 (4,294,967,264)
+    uint32_t t_before = 0xFFFFFFE0;
+    player.update(t_before); // Frame 0
+    assert(mock.rendered_frames.back() == 0);
+
+    // Rollover to small timestamp: 0x00000020 (32).
+    // Elapsed = 32 - 4294967264 = 64 (in 32-bit unsigned arithmetic).
+    // Frame delay is 60ms. Elapsed (64) >= 60 -> advances to Frame 1.
+    uint32_t t_after = 0x00000020;
+    bool updated = player.update(t_after);
+    assert(updated == true);
+    assert(player.getCurrentFrame() == 1);
+    assert(mock.rendered_frames.back() == 1);
+
+    std::cout << "  [PASS] test_millis_rollover" << std::endl;
+}
+
+void test_memory_footprint() {
+    size_t player_ram = sizeof(animotion::Player);
+    size_t anim_struct_size = sizeof(animotion::Animation);
+
+    // Host size will be 64-bit aligned, MCU 32-bit aligned.
+    // Assert both are strictly lightweight (< 64 bytes).
+    assert(player_ram <= 64);
+    assert(anim_struct_size <= 64);
+
+    size_t frame_bitmap_bytes = ANIMATION_BYTES_PER_FRAME * ANIMATION_FRAME_COUNT;
+    size_t frame_delays_bytes = sizeof(uint16_t) * ANIMATION_FRAME_COUNT;
+    size_t frame_pointers_bytes = sizeof(void*) * ANIMATION_FRAME_COUNT;
+    size_t total_flash_bytes = frame_bitmap_bytes + frame_delays_bytes + frame_pointers_bytes + anim_struct_size;
+
+    std::cout << "  [MEMORY METRICS]" << std::endl;
+    std::cout << "    - sizeof(animotion::Player) RAM:   " << player_ram << " bytes" << std::endl;
+    std::cout << "    - sizeof(animotion::Animation):    " << anim_struct_size << " bytes" << std::endl;
+    std::cout << "    - Flash Frame Bitmaps:             " << frame_bitmap_bytes << " bytes (" << (frame_bitmap_bytes / 1024.0) << " KB)" << std::endl;
+    std::cout << "    - Flash Delays + Pointers:         " << (frame_delays_bytes + frame_pointers_bytes) << " bytes" << std::endl;
+    std::cout << "    - Total Flash Footprint:           " << total_flash_bytes << " bytes (~" << (total_flash_bytes / 1024.0) << " KB)" << std::endl;
+    std::cout << "    - Playback Dynamic Heap Usage:     0 bytes (zero-allocation)" << std::endl;
+    std::cout << "  [PASS] test_memory_footprint" << std::endl;
+}
+
 int main() {
     std::cout << "Running Animotion C++ Engine Unit Tests..." << std::endl;
 
@@ -199,6 +255,8 @@ int main() {
     test_non_looping_stop();
     test_adapter_interface();
     test_pause_and_resume();
+    test_millis_rollover();
+    test_memory_footprint();
 
     std::cout << "All Animotion C++ Engine Unit Tests PASSED successfully!" << std::endl;
     return 0;

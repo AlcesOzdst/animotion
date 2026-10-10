@@ -20,8 +20,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 
-// Core Animotion engine header
-#include "animotion.h"
+// Modular Animotion engine header
+#include "animotion/player.h"
 
 // Generated animation header (exported from converter/animotion.py)
 #include "animation.h"

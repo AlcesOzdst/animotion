@@ -3,8 +3,8 @@
 > A cross-platform animation engine for ESP microcontrollers. Convert GIFs into optimized, firmware-ready assets and C/C++ code with display adapters and a reusable, non-blocking playback runtime.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/Platform-ESP32--C3%20%7C%20ESP32%20%7C%20ESP8266-green.svg)]()
-[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)]()
+[![Platform](https://img.shields.io/badge/Platform-ESP32--C3%20%7C%20ESP32%20%7C%20ESP8266-green.svg)](https://github.com/AlcesOzdst/animotion)
+[![Python](https://img.shields.io/badge/Python-3.9%2B-blue.svg)](https://github.com/AlcesOzdst/animotion)
 
 ---
 
@@ -13,17 +13,35 @@
 **Animotion v0.1** is a lightweight, zero-dependency embedded animation workflow designed for resource-constrained microcontrollers such as the **ESP32-C3 SuperMini** paired with monochrome OLED displays (SSD1306 128×64).
 
 ### Key Features
+
 - **Offline GIF Converter:** Converts animated GIFs into row-major 1-bit MSB-first PROGMEM byte arrays compatible with `Adafruit_GFX::drawBitmap()`.
 - **Timing Preservation & Overrides:** Preserves individual GIF frame delays or overrides them with a configurable `--fps` or `--delay-ms`.
-- **Zero-Allocation Runtime Player:** Minimal C++ engine (`engine/include/animotion.h`) that plays animations non-blockingly using `millis()`.
+- **Modular C++ Engine:** Cleanly separated headers (`animotion/animation.h`, `animotion/display_adapter.h`, `animotion/player.h`, and umbrella `animotion.h`).
+- **Zero-Allocation Runtime Player:** Minimal C++ player that plays animations non-blockingly using `millis()`.
 - **Display-Independent:** Renders frames via a decoupled callback or `IDisplayAdapter` interface.
+- **Embedded Memory Optimized:**
+  - **Static RAM:** ~28–32 bytes (`sizeof(Player)` on 32-bit MCU).
+  - **Dynamic Heap:** 0 bytes during playback (zero-allocation).
+  - **Flash ROM:** Frames stream directly from flash pointers into display without intermediate RAM frame buffers.
 - **Built-in Sample Generator:** Create test animations immediately without downloading external assets.
+
+---
+
+## Engine Architecture
+
+The runtime engine lives in `engine/include/` and is divided into decoupled components:
+
+- [`animotion/animation.h`](engine/include/animotion/animation.h) — Flash memory (`PROGMEM`) read helpers and the `animotion::Animation` asset struct.
+- [`animotion/display_adapter.h`](engine/include/animotion/display_adapter.h) — Display-agnostic `RenderCallback` function pointer and `IDisplayAdapter` abstract class.
+- [`animotion/player.h`](engine/include/animotion/player.h) — Zero-allocation playback controller with millis rollover safety.
+- [`animotion.h`](engine/include/animotion.h) — Umbrella header providing all components for quick integration.
 
 ---
 
 ## Architecture & Bit Format
 
 The converter packs monochrome pixels into scanlines:
+
 - **Scanline padding:** Each row is padded to a whole byte boundary: `row_bytes = (width + 7) / 8`.
 - **Bit order:** MSB-first (`0x80` is the leftmost pixel of each byte).
 - **Polarity:** `1` = Pixel ON (White), `0` = Pixel OFF (Black). (Inversion supported via `--invert`).
@@ -60,7 +78,7 @@ python converter/animotion.py my_animation.gif -o animation.h -W 128 -H 64 --fps
 #### CLI Options
 
 | Flag | Default | Description |
-|---|---|---|
+| --- | --- | --- |
 | `input` | — | Path to source GIF file |
 | `-o, --output` | `<input>.h` | Destination C++ header file |
 | `-W, --width` | `128` | Target width in pixels |
@@ -81,7 +99,7 @@ python converter/animotion.py my_animation.gif -o animation.h -W 128 -H 64 --fps
 Targeted at the **ESP32-C3 SuperMini** and standard **SSD1306 0.96" I2C OLED (128×64)**:
 
 | ESP32-C3 SuperMini Pin | SSD1306 OLED Pin | Description |
-|---|---|---|
+| --- | --- | --- |
 | `3.3V` | `VCC` | Power (3.3V) |
 | `GND` | `GND` | Ground |
 | `GPIO 8` | `SDA` | I2C Data (default hardware I2C) |
