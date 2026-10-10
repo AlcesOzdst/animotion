@@ -76,15 +76,19 @@ void onRenderFrame(const uint8_t* bitmap, uint16_t width, uint16_t height, uint1
 
 void setup() {
     Serial.begin(115200);
-    // Brief settling time for USB CDC / Serial on ESP32-C3
-    delay(400);
+    delay(500);
 
     Serial.println();
     Serial.println(F("========================================"));
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
     Serial.println(F("  Animotion v0.1 — ESP32-C3 SuperMini   "));
+#else
+    Serial.println(F("  Animotion v0.1 — ESP32 DevKit         "));
+#endif
     Serial.println(F("========================================"));
+    Serial.flush();
 
-    // Initialize I2C bus with ESP32-C3 pins
+    // Initialize I2C bus
     Wire.begin(I2C_SDA_PIN, I2C_SCL_PIN);
 
     // Initialize SSD1306 display
