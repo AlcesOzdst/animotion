@@ -32,11 +32,16 @@
 #define OLED_RESET -1
 #define SCREEN_I2C_ADDRESS 0x3C
 
-// Pinout for ESP32-C3 SuperMini
-// Note: Some third-party boards route I2C to GPIO 4 (SDA) and GPIO 5 (SCL).
-// Adjust these defines if your board uses alternate pins.
-#define I2C_SDA_PIN 8
-#define I2C_SCL_PIN 9
+// Hardware I2C Pinout
+// Standard ESP32 DevKit (WROOM-32): SDA = GPIO 21, SCL = GPIO 22
+// ESP32-C3 SuperMini:               SDA = GPIO 8,  SCL = GPIO 9 (or GPIO 4/5)
+#if defined(CONFIG_IDF_TARGET_ESP32C3)
+    #define I2C_SDA_PIN 8
+    #define I2C_SCL_PIN 9
+#else
+    #define I2C_SDA_PIN 21
+    #define I2C_SCL_PIN 22
+#endif
 
 // Display instance
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
