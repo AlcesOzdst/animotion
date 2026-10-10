@@ -1,0 +1,5 @@
+# Offline conversion tool dependencies
+Pillow>=10.0.0
+
+# Optional test runner
+# pytest>=8.0.0

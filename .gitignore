@@ -66,3 +66,12 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+.pytest_cache/
+__pycache__/
+*.py[cod]
+
+# PlatformIO & Embedded
+.pio/
+.pioenvs/
+.piolibdeps/
+
