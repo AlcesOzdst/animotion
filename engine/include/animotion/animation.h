@@ -62,13 +62,14 @@ inline const uint8_t* readFramePointer(const uint8_t* const* frameList, uint16_t
  */
 inline uint16_t readFrameDelay(const uint16_t* delayList, uint16_t index, uint16_t defaultDelay = 100) {
     if (!delayList) {
-        return defaultDelay;
+        return (defaultDelay > 0) ? defaultDelay : 100;
     }
 #if defined(ESP32) || defined(ESP8266) || defined(ARDUINO)
-    return pgm_read_word(&delayList[index]);
+    uint16_t d = pgm_read_word(&delayList[index]);
 #else
-    return delayList[index];
+    uint16_t d = delayList[index];
 #endif
+    return (d > 0) ? d : ((defaultDelay > 0) ? defaultDelay : 100);
 }
 
 } // namespace animotion
